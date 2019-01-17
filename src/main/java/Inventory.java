@@ -1,5 +1,7 @@
-import java.util.ArrayList;
-import java.util.List;
+
+import java.util.HashMap;
+import java.util.Map;
+
 
 class InsufficientInventory extends Exception {
     public InsufficientInventory(int currentInventory, int requestedInventory) {
@@ -9,90 +11,65 @@ class InsufficientInventory extends Exception {
 }
 
 public class Inventory {
-    private List<Product> products = new ArrayList<>();
+    private Map<String, Product> products = new HashMap<>();
 
-    private int getProductIndex(String productId) {
-        for (int i = 0; i < products.size(); i++) {
-            if (products.get(i).getProductId().equals(productId)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
 
     void addProduct(String productId, double price, int quantity) {
-        int index = getProductIndex(productId);
-        if (index >= 0) {
-            Product product = products.get(index);
+        Product product = products.get(productId);
+        if(product != null) {
             product.addStock(quantity);
             if (product.getPrice() != price) {
                 product.setPrice(price);
             }
 
         } else {
-            products.add(new Product(productId, price, quantity));
+            products.put(productId, new Product(productId, price, quantity));
         }
+
     }
 
     void removeProduct(String productId, int quantity) throws InsufficientInventory {
-        boolean exists = false;
-        for (int i = 0; i < products.size(); i++) {
-            if(products.get(i).getProductId() == productId) {
-                if(products.get(i).getQuantity() > quantity) {
-                    products.get(i).addStock((0 - quantity));
-                } else if(products.get(i).getQuantity() == quantity) {
-                    products.remove(i);
-                } else {
-                    throw new InsufficientInventory(
-                            products.get(i).getQuantity(), quantity
-                    );
-                }
-                exists = true;
+
+        Product product = products.get(productId);
+        if(product != null) {
+            if(product.getQuantity() > quantity) {
+                product.addStock(0-quantity);
+            }else if(product.getQuantity() == quantity){
+                products.remove(productId);
+            } else {
+                throw new InsufficientInventory (product.getQuantity(), quantity);
             }
-        }
-        if(!exists){
+        } else {
             throw new InsufficientInventory(0, quantity);
         }
     }
 
-    Product getProduct(String productId) {
-        int index = getProductIndex(productId);
-        if (index >= 0) {
-            return products.get(index);
-        } else {
-            return null;
-        }
-    }
 
     String getAllProductNames() {
-        List<String> productIds = new ArrayList<>();
-        for (Product product : products) {
-            productIds.add(product.getProductId());
-        }
 
-        return String.join(", ", productIds);
+        return String.join(", ", products.keySet());
     }
 
     double totalInventoryValue() {
         double inventorValue = 0;
-        for (int i = 0; i < products.size(); i++) {
-            inventorValue += products.get(i).getQuantity() * products.get(i).getPrice();
+        for(Product product : products.values()){
+            inventorValue += product.getQuantity() * product.getPrice();
         }
         return inventorValue;
     }
 
     boolean inStock(String productId) {
-        for (int i = 0; i < products.size(); i++) {
-            if (products.get(i).getProductId() == productId && products.get(i).getQuantity() > 0){
-                return true;
-            }
-
+        Product product = products.get(productId);
+        if(product != null) {
+            return product.getQuantity() != 0;
         }
-        return false;
+
+            return false;
     }
 
-
+    Product getProduct(String productId) {
+        return products.get(productId);
+    }
 
     public static void main(String[] args) {
         Inventory inventory = new Inventory();
