@@ -1,3 +1,5 @@
+import java.util.Set;
+import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,22 +11,12 @@ class InsufficientInventory extends Exception {
 }
 
 public class Inventory {
-    private List<Product> products = new ArrayList<>();
+    private Set<Product> products = new HashSet<>();
 
-    private int getProductIndex(String productId) {
-        for (int i = 0; i < products.size(); i++) {
-            if (products.get(i).getProductId().equals(productId)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
 
     void addProduct(String productId, double price, int quantity) {
-        int index = getProductIndex(productId);
-        if (index >= 0) {
-            Product product = products.get(index);
+        Product product = getProduct(productId);
+        if(product != null) {
             product.addStock(quantity);
             if (product.getPrice() != price) {
                 product.setPrice(price);
@@ -33,36 +25,31 @@ public class Inventory {
         } else {
             products.add(new Product(productId, price, quantity));
         }
+
     }
 
     void removeProduct(String productId, int quantity) throws InsufficientInventory {
-        boolean exists = false;
-        for (int i = 0; i < products.size(); i++) {
-            if(products.get(i).getProductId() == productId) {
-                if(products.get(i).getQuantity() > quantity) {
-                    products.get(i).addStock((0 - quantity));
-                } else if(products.get(i).getQuantity() == quantity) {
-                    products.remove(i);
-                } else {
-                    throw new InsufficientInventory(
-                            products.get(i).getQuantity(), quantity
-                    );
-                }
-                exists = true;
+
+        Product product = getProduct(productId);
+        if(product != null) {
+            if(product.getQuantity() > quantity) {
+                product.addStock(0-quantity);
+            }else if(product.getQuantity() == quantity){
+                products.remove(product);
+            } else {
+                throw new InsufficientInventory (product.getQuantity(), quantity);
             }
-        }
-        if(!exists){
+        } else {
             throw new InsufficientInventory(0, quantity);
         }
     }
 
     Product getProduct(String productId) {
-        int index = getProductIndex(productId);
-        if (index >= 0) {
-            return products.get(index);
-        } else {
-            return null;
-        }
+        for(Product product: products) {
+            if (product.getProductId().equals(productId)){
+                return product;
+            }
+        } return null;
     }
 
     String getAllProductNames() {
@@ -76,20 +63,19 @@ public class Inventory {
 
     double totalInventoryValue() {
         double inventorValue = 0;
-        for (int i = 0; i < products.size(); i++) {
-            inventorValue += products.get(i).getQuantity() * products.get(i).getPrice();
+        for(Product product : products){
+            inventorValue += product.getQuantity() * product.getPrice();
         }
         return inventorValue;
     }
 
     boolean inStock(String productId) {
-        for (int i = 0; i < products.size(); i++) {
-            if (products.get(i).getProductId() == productId && products.get(i).getQuantity() > 0){
-                return true;
-            }
-
+        Product product = getProduct(productId);
+        if(product != null) {
+            return product.getQuantity() != 0;
         }
-        return false;
+
+            return false;
     }
 
 
